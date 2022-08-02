@@ -3,20 +3,20 @@
 ```
 $ cargo run -- --help
 play-rsa 0.1.0
-Sign/Verify: Padding Scheme use PKCS1v15 and hash function use ripemd160. Encrypt/Decrypt: Padding
+Sign/Verify: Padding Scheme use PKCS1v15 and hash function use sha2_256. Encrypt/Decrypt: Padding
 Scheme use PKCS1v15
 
 USAGE:
     play-rsa <SUBCOMMAND>
 
 SUBCOMMANDS:
-    decrypt          Decrypt a ciphertext use private key, output the message
-    encrypt          Encrypt a message use public key, output the ciphertext (hex format)
-    help             Print this message or the help of the given subcommand(s)
-    sign             Sign (use RIPEMD160 hash) a message use private key, output the signature
-                         (hex format)
-    to-public-key    Generate public key from a private key (pkcs1 pem format)
-    verify           Verify a message use public key
+    decrypt            Decrypt a ciphertext use private key, output the message
+    encrypt            Encrypt a message use public key, output the ciphertext (hex format)
+    gen-private-key    Generate a random private key (pkcs1 pem format)
+    help               Print this message or the help of the given subcommand(s)
+    sign               Sign a message use private key, output the signature (hex format)
+    to-public-key      Generate public key from a private key (pkcs1 pem format)
+    verify             Verify a message use public key
 ```
 
 ## Export private/public key from gpg key
