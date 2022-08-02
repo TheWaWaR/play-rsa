@@ -73,7 +73,7 @@ enum Commands {
         ciphertext_hex: String,
     },
     /// Generate public key from a private key (pkcs1 pem format)
-    ToPublicKey {
+    GenPublicKey {
         /// The rsa private key
         #[clap(long, value_parser, value_name = "FILE")]
         private_key: PathBuf,
@@ -156,7 +156,7 @@ fn main() {
                 }
             }
         }
-        Commands::ToPublicKey { private_key } => {
+        Commands::GenPublicKey { private_key } => {
             let priv_key = privkey_from_path(&private_key);
             let pub_key = priv_key.to_public_key();
             let pub_pem = pub_key.to_pkcs1_pem(LineEnding::LF).unwrap();
