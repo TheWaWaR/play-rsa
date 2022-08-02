@@ -1,21 +1,23 @@
 use std::fs;
+use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 use clap::{Parser, Subcommand};
 use pem_rfc7468::LineEnding;
-use ripemd::{Digest, Ripemd160};
 use rsa::{
     hash::Hash,
     padding::PaddingScheme,
     // pkcs8::{DecodePrivateKey, DecodePublicKey},
-    pkcs1::{DecodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPublicKey},
+    pkcs1::{DecodeRsaPrivateKey, DecodeRsaPublicKey, EncodeRsaPrivateKey, EncodeRsaPublicKey},
     PublicKey,
+    PublicKeyParts,
     RsaPrivateKey,
     RsaPublicKey,
 };
+use sha2::{Digest, Sha256};
 
 #[derive(Parser, Debug)]
-/// Sign/Verify: Padding Scheme use PKCS1v15 and hash function use ripemd160.
+/// Sign/Verify: Padding Scheme use PKCS1v15 and hash function use sha2_256.
 /// Encrypt/Decrypt: Padding Scheme use PKCS1v15.
 #[clap(author, version, about, long_about = None)]
 struct Cli {
@@ -25,7 +27,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    /// Sign (use RIPEMD160 hash) a message use private key, output the signature (hex format)
+    /// Sign a message use private key, output the signature (hex format)
     Sign {
         /// The rsa private key
         #[clap(long, value_parser, value_name = "FILE")]
@@ -75,6 +77,12 @@ enum Commands {
         #[clap(long, value_parser, value_name = "FILE")]
         private_key: PathBuf,
     },
+    /// Generate a random private key (pkcs1 pem format)
+    GenPrivateKey {
+        /// bit size
+        #[clap(long, value_parser, value_name = "NUMBER")]
+        bit_size: usize,
+    },
 }
 
 fn pubkey_from_path(path: &Path) -> RsaPublicKey {
@@ -90,7 +98,7 @@ fn main() {
     let cli = Cli::parse();
     println!("command: {:?}", cli.command);
     let sign_padding = PaddingScheme::PKCS1v15Sign {
-        hash: Some(Hash::RIPEMD160),
+        hash: Some(Hash::SHA2_256),
     };
     let encrypt_padding = PaddingScheme::PKCS1v15Encrypt;
     match cli.command {
@@ -99,7 +107,7 @@ fn main() {
             message,
         } => {
             let priv_key = privkey_from_path(&private_key);
-            let mut hasher = Ripemd160::new();
+            let mut hasher = Sha256::new();
             hasher.update(message.as_bytes());
             let digest = hasher.finalize();
             let signature = priv_key.sign(sign_padding, digest.as_slice()).unwrap();
@@ -112,7 +120,7 @@ fn main() {
         } => {
             let pub_key = pubkey_from_path(&public_key);
             let signature = hex::decode(&signature_hex).unwrap();
-            let mut hasher = Ripemd160::new();
+            let mut hasher = Sha256::new();
             hasher.update(message.as_bytes());
             let digest = hasher.finalize();
             if let Err(err) = pub_key.verify(sign_padding, digest.as_slice(), &signature) {
@@ -151,7 +159,17 @@ fn main() {
             let priv_key = privkey_from_path(&private_key);
             let pub_key = priv_key.to_public_key();
             let pub_pem = pub_key.to_pkcs1_pem(LineEnding::LF).unwrap();
+            println!(">> bit_size: {}", pub_key.size() * 8);
             println!(">> [public key pem]:\n{}", pub_pem);
+        }
+        Commands::GenPrivateKey { bit_size } => {
+            let mut rng = rand::thread_rng();
+            let priv_key = RsaPrivateKey::new(&mut rng, bit_size).expect("generate a key");
+            let priv_pem = priv_key.to_pkcs1_pem(LineEnding::LF).unwrap();
+            let pub_key = priv_key.to_public_key();
+            let pub_pem = pub_key.to_pkcs1_pem(LineEnding::LF).unwrap();
+            println!(">> [private key pem]:\n{}", priv_pem.deref());
+            println!(">> [public  key pem]:\n{}", pub_pem);
         }
     }
 }
