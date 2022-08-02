@@ -1,6 +1,7 @@
 use std::fs;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
+use std::process::exit;
 
 use clap::{Parser, Subcommand};
 use pem_rfc7468::LineEnding;
@@ -79,7 +80,7 @@ enum Commands {
     },
     /// Generate a random private key (pkcs1 pem format)
     GenPrivateKey {
-        /// bit size
+        /// bit size, allowed value: [1024, 2048, 4096]
         #[clap(long, value_parser, value_name = "NUMBER")]
         bit_size: usize,
     },
@@ -163,6 +164,10 @@ fn main() {
             println!(">> [public key pem]:\n{}", pub_pem);
         }
         Commands::GenPrivateKey { bit_size } => {
+            if ![1024, 2048, 4096].iter().any(|v| *v == bit_size) {
+                println!("ERROR: invalid <bit-size>: {}", bit_size);
+                exit(-1);
+            }
             let mut rng = rand::thread_rng();
             let priv_key = RsaPrivateKey::new(&mut rng, bit_size).expect("generate a key");
             let priv_pem = priv_key.to_pkcs1_pem(LineEnding::LF).unwrap();
