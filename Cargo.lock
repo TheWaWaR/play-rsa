@@ -297,6 +297,7 @@ name = "play-rsa"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "pem-rfc7468",
  "rsa",
 ]
 
